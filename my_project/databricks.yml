@@ -1,0 +1,35 @@
+# This is a Databricks asset bundle definition for my_project.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+bundle:
+  name: my_project
+  uuid: 0770ae45-180c-4c5b-96f2-9a9ce0442721
+
+artifacts:
+  python_artifact:
+    type: whl
+    build: uv build --wheel
+
+include:
+  - resources/*.yml
+  - resources/*/*.yml
+
+targets:
+  dev:
+    # The default target uses 'mode: development' to create a development copy.
+    # - Deployed resources get prefixed with '[dev my_user_name]'
+    # - Any job schedules and triggers are paused by default.
+    # See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.html.
+    mode: development
+    default: true
+    workspace:
+      host: https://dbc-c542a15f-437f.cloud.databricks.com
+
+  prod:
+    mode: production
+    workspace:
+      host: https://dbc-c542a15f-437f.cloud.databricks.com
+      # We explicitly deploy to /Workspace/Users/pawanpreet.sangari@databricks.com to make sure we only have a single copy.
+      root_path: /Workspace/Users/pawanpreet.sangari@databricks.com/.bundle/${bundle.name}/${bundle.target}
+    permissions:
+      - user_name: pawanpreet.sangari@databricks.com
+        level: CAN_MANAGE
