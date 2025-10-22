@@ -107,8 +107,11 @@ echo "Uploading frontend..."
 databricks workspace import-dir frontend/build "$WORKSPACE_PATH/frontend" --overwrite
 
 echo "Uploading configuration..."
+# Delete existing app.yaml if it exists
+databricks workspace delete "$WORKSPACE_PATH/app.yaml" 2>/dev/null || true
+
 if [ -f "app.yaml" ]; then
-    databricks workspace import "$WORKSPACE_PATH/app.yaml" --file app.yaml --overwrite
+    databricks workspace import "$WORKSPACE_PATH/app.yaml" --file app.yaml --language PYTHON
 else
     echo -e "${YELLOW}⚠️  app.yaml not found, using default configuration${NC}"
 fi
