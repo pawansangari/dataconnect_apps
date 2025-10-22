@@ -85,13 +85,13 @@ databricks workspace import-dir frontend "$WORKSPACE_PATH/frontend" --overwrite
 
 echo "Uploading configuration..."
 if [ -f "app.yaml" ]; then
-    databricks workspace import app.yaml "$WORKSPACE_PATH/app.yaml" --overwrite
+    databricks workspace import "$WORKSPACE_PATH/app.yaml" --file app.yaml --overwrite
 else
     echo -e "${YELLOW}⚠️  app.yaml not found, creating default${NC}"
     cat > /tmp/app_temp.yaml << 'EOF'
 command: ["sh", "-c", "cd backend && pip install -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000"]
 EOF
-    databricks workspace import /tmp/app_temp.yaml "$WORKSPACE_PATH/app.yaml" --overwrite
+    databricks workspace import "$WORKSPACE_PATH/app.yaml" --file /tmp/app_temp.yaml --overwrite
     rm /tmp/app_temp.yaml
 fi
 

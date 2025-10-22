@@ -108,7 +108,7 @@ databricks workspace import-dir frontend/build "$WORKSPACE_PATH/frontend" --over
 
 echo "Uploading configuration..."
 if [ -f "app.yaml" ]; then
-    databricks workspace import app.yaml "$WORKSPACE_PATH/app.yaml" --overwrite
+    databricks workspace import "$WORKSPACE_PATH/app.yaml" --file app.yaml --overwrite
 else
     echo -e "${YELLOW}⚠️  app.yaml not found, using default configuration${NC}"
 fi

@@ -43,7 +43,7 @@ cat > /tmp/backend-app.yaml << 'EOF'
 command: ["sh", "-c", "cd backend && pip install -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000"]
 EOF
 
-databricks workspace import /tmp/backend-app.yaml "$APP_FOLDER_IN_WORKSPACE/app.yaml" --overwrite
+databricks workspace import "$APP_FOLDER_IN_WORKSPACE/app.yaml" --file /tmp/backend-app.yaml --overwrite
 
 # Deploy
 databricks apps deploy "$LAKEHOUSE_APP_NAME" "$APP_FOLDER_IN_WORKSPACE" dev
