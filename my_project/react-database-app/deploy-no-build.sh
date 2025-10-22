@@ -115,9 +115,18 @@ if databricks apps get "$APP_NAME" &>/dev/null; then
         exit 1
     fi
 else
-    echo "App does not exist, creating new app..."
-    if databricks apps create "$APP_NAME" --source-code-path "$WORKSPACE_PATH"; then
-        echo -e "${GREEN}✅ Application created successfully!${NC}"
+    echo "App does not exist, creating and deploying..."
+    # First create the app
+    if databricks apps create "$APP_NAME"; then
+        echo "App created, now deploying..."
+        # Then deploy with source code
+        if databricks apps deploy "$APP_NAME" --source-code-path "$WORKSPACE_PATH"; then
+            echo -e "${GREEN}✅ Application created and deployed successfully!${NC}"
+        else
+            echo -e "${RED}❌ Deployment failed. Check logs with:${NC}"
+            echo "   databricks apps logs $APP_NAME"
+            exit 1
+        fi
     else
         echo -e "${RED}❌ App creation failed${NC}"
         exit 1
