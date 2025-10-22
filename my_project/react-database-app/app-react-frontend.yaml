@@ -1,0 +1,119 @@
+# Databricks App Configuration - React Frontend + FastAPI Backend
+# This configuration serves the built React app and FastAPI backend together
+
+command:
+  - sh
+  - -c
+  - |
+    # Install Python dependencies
+    pip install fastapi uvicorn python-multipart
+    
+    # Create integrated FastAPI + React app
+    cat > /tmp/integrated_app.py << 'PYEOF'
+    from fastapi import FastAPI, Request
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse, JSONResponse
+    from fastapi.middleware.cors import CORSMiddleware
+    import os
+    from pathlib import Path
+    
+    app = FastAPI(title="CMS-10114 NPI Application")
+    
+    # CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    
+    # Define paths
+    FRONTEND_DIR = Path("/workspace/frontend")
+    STATIC_DIR = FRONTEND_DIR / "static"
+    INDEX_HTML = FRONTEND_DIR / "index.html"
+    
+    # API Routes
+    @app.get("/api/health")
+    async def health():
+        """Health check endpoint"""
+        return {
+            "status": "healthy",
+            "message": "CMS-10114 NPI Application is running",
+            "frontend": "React (Production Build)",
+            "backend": "FastAPI",
+            "version": "1.0.0"
+        }
+    
+    @app.get("/api/providers")
+    async def get_providers():
+        """Get all providers (placeholder)"""
+        return {
+            "message": "Database integration available",
+            "providers": [],
+            "total": 0
+        }
+    
+    @app.post("/api/providers")
+    async def create_provider(request: Request):
+        """Create a new provider (placeholder)"""
+        data = await request.json()
+        return {
+            "message": "Provider registration received",
+            "status": "pending",
+            "data": data
+        }
+    
+    # Mount static files (CSS, JS, etc.)
+    if STATIC_DIR.exists():
+        app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+    
+    # Serve React app for all other routes (SPA routing)
+    @app.get("/{full_path:path}")
+    async def serve_react_app(full_path: str):
+        """
+        Serve the React application.
+        All routes except /api/* will serve the React index.html
+        This enables client-side routing.
+        """
+        # If the path is a file that exists, serve it
+        file_path = FRONTEND_DIR / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        
+        # Otherwise, serve index.html (React will handle routing)
+        if INDEX_HTML.exists():
+            return FileResponse(INDEX_HTML)
+        
+        # Fallback if React build not found
+        return JSONResponse(
+            status_code=404,
+            content={
+                "error": "React frontend not found",
+                "message": "Please ensure the React app is built and uploaded to /workspace/frontend/",
+                "api_available": True,
+                "api_docs": "/docs"
+            }
+        )
+    
+    PYEOF
+    
+    # Run the application
+    echo "🚀 Starting CMS-10114 NPI Application..."
+    echo "📁 Frontend directory: /workspace/frontend"
+    echo "🔌 Backend API: FastAPI"
+    echo ""
+    
+    # Check if frontend exists
+    if [ -d "/workspace/frontend" ]; then
+        echo "✅ Frontend directory found"
+        ls -la /workspace/frontend/ | head -10
+    else
+        echo "⚠️  Frontend directory not found at /workspace/frontend"
+        echo "   The API will still work, but the React UI won't be available"
+    fi
+    
+    echo ""
+    echo "🌐 Starting server on port 8000..."
+    uvicorn integrated_app:app --host 0.0.0.0 --port 8000 --app-dir /tmp
+
