@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Accept parameters
-APP_FOLDER_IN_WORKSPACE=${1:-"/Workspace/Users/pawanpreet.sangari@databricks.com/apps/demo-app"}
+# Accept parameters - UPDATED WITH CORRECT PATH
+APP_FOLDER_IN_WORKSPACE=${1:-"/Workspace/Users/pawanpreet.sangari@databricks.com/dataconnect_apps/my_project/demo-app"}
 # Databricks App must already have been created. You can do so with the Databricks CLI or via the UI in a Workspace.
 LAKEHOUSE_APP_NAME=${2:-"demo-app"}
 
@@ -54,4 +54,3 @@ echo ""
 echo "📊 Check app status:"
 echo "   databricks apps get $LAKEHOUSE_APP_NAME"
 echo ""
-
