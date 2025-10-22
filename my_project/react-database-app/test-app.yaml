@@ -1,2 +1,0 @@
-command: ["sh", "-c", "pip install fastapi uvicorn && python3 -c \"from fastapi import FastAPI; app = FastAPI(); @app.get('/'):
- def root(): return {'status': 'healthy', 'message': 'API Running'}; @app.get('/api/health'): def health(): return {'status': 'healthy'}\" || uvicorn --version"]
