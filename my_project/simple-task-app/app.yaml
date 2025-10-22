@@ -1,0 +1,148 @@
+# Databricks App Configuration for Task Manager
+# This configuration deploys both React frontend and FastAPI backend
+
+command:
+  - sh
+  - -c
+  - |
+    # Install Python dependencies
+    echo "📦 Installing Python dependencies..."
+    pip install fastapi uvicorn pydantic python-multipart
+    
+    # Create integrated FastAPI application
+    echo "🔧 Setting up application..."
+    cat > /tmp/app.py << 'PYEOF'
+    from fastapi import FastAPI, HTTPException
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
+    from fastapi.middleware.cors import CORSMiddleware
+    from pydantic import BaseModel
+    from typing import List, Optional
+    from datetime import datetime
+    from pathlib import Path
+    
+    app = FastAPI(title="Task Manager API", version="1.0.0")
+    
+    # CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    
+    # In-memory task storage
+    tasks_db = []
+    task_id_counter = 1
+    
+    # Models
+    class TaskCreate(BaseModel):
+        title: str
+        description: Optional[str] = ""
+        priority: str = "medium"
+    
+    class Task(BaseModel):
+        id: int
+        title: str
+        description: Optional[str] = ""
+        priority: str = "medium"
+        completed: bool = False
+        created_at: str
+    
+    # API Endpoints
+    @app.get("/api/health")
+    def health_check():
+        return {
+            "status": "healthy",
+            "app": "Task Manager",
+            "timestamp": datetime.now().isoformat(),
+            "total_tasks": len(tasks_db)
+        }
+    
+    @app.get("/api/tasks", response_model=List[Task])
+    def get_tasks():
+        return tasks_db
+    
+    @app.post("/api/tasks", response_model=Task)
+    def create_task(task: TaskCreate):
+        global task_id_counter
+        new_task = Task(
+            id=task_id_counter,
+            title=task.title,
+            description=task.description or "",
+            priority=task.priority,
+            completed=False,
+            created_at=datetime.now().isoformat()
+        )
+        tasks_db.append(new_task.dict())
+        task_id_counter += 1
+        return new_task
+    
+    @app.patch("/api/tasks/{task_id}/toggle")
+    def toggle_task(task_id: int):
+        for task in tasks_db:
+            if task["id"] == task_id:
+                task["completed"] = not task["completed"]
+                return {"message": "Task updated", "task": task}
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    @app.delete("/api/tasks/{task_id}")
+    def delete_task(task_id: int):
+        for i, task in enumerate(tasks_db):
+            if task["id"] == task_id:
+                deleted_task = tasks_db.pop(i)
+                return {"message": "Task deleted", "task": deleted_task}
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    @app.get("/api/stats")
+    def get_stats():
+        total = len(tasks_db)
+        completed = sum(1 for task in tasks_db if task["completed"])
+        pending = total - completed
+        priority_counts = {"low": 0, "medium": 0, "high": 0}
+        for task in tasks_db:
+            priority_counts[task["priority"]] += 1
+        return {
+            "total_tasks": total,
+            "completed_tasks": completed,
+            "pending_tasks": pending,
+            "by_priority": priority_counts
+        }
+    
+    # Add demo data
+    demo_tasks = [
+        {"title": "Welcome to Task Manager!", "description": "This is your first task", "priority": "high"},
+        {"title": "Try creating a new task", "description": "Click the Add Task button", "priority": "medium"},
+        {"title": "Mark tasks as complete", "description": "Click the checkbox", "priority": "low"}
+    ]
+    for task_data in demo_tasks:
+        create_task(TaskCreate(**task_data))
+    
+    # Serve static files
+    FRONTEND_DIR = Path("/workspace/frontend")
+    if FRONTEND_DIR.exists():
+        app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR / "static")), name="static")
+    
+    # Serve React app
+    @app.get("/{full_path:path}")
+    async def serve_react_app(full_path: str):
+        file_path = FRONTEND_DIR / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        
+        index_html = FRONTEND_DIR / "index.html"
+        if index_html.exists():
+            return FileResponse(index_html)
+        
+        return {"message": "Task Manager API", "docs": "/docs"}
+    
+    PYEOF
+    
+    # Run the application
+    echo "🚀 Starting Task Manager..."
+    echo "✅ API available at /api/*"
+    echo "✅ Frontend available at /"
+    echo ""
+    uvicorn app:app --host 0.0.0.0 --port 8000 --app-dir /tmp
+
