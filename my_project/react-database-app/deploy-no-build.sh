@@ -46,8 +46,8 @@ echo -e "${GREEN}✅ Authenticated${NC}"
 CURRENT_USER=$(databricks current-user me | grep -o '"userName":"[^"]*"' | cut -d'"' -f4)
 echo -e "User: ${GREEN}$CURRENT_USER${NC}"
 
-# Set workspace path
-WORKSPACE_PATH="/Users/$CURRENT_USER/apps/$APP_NAME"
+# Set workspace path - Use /Workspace prefix for Databricks Apps
+WORKSPACE_PATH="/Workspace/Users/$CURRENT_USER/apps/$APP_NAME"
 echo -e "Workspace path: ${GREEN}$WORKSPACE_PATH${NC}"
 echo ""
 
@@ -101,17 +101,27 @@ fi
 echo -e "${GREEN}✅ Files uploaded successfully${NC}"
 echo ""
 
-# Step 4: Deploy Application
-echo -e "${YELLOW}🚀 Step 4/4: Deploying application...${NC}"
-echo "Running: databricks apps deploy \"$APP_NAME\" --source-code-path \"$WORKSPACE_PATH\""
-echo ""
+# Step 4: Create or Deploy Application
+echo -e "${YELLOW}🚀 Step 4/4: Creating/Deploying application...${NC}"
 
-if databricks apps deploy "$APP_NAME" --source-code-path "$WORKSPACE_PATH"; then
-    echo -e "${GREEN}✅ Application deployed successfully!${NC}"
+# Check if app exists
+if databricks apps get "$APP_NAME" &>/dev/null; then
+    echo "App exists, deploying update..."
+    if databricks apps deploy "$APP_NAME" --source-code-path "$WORKSPACE_PATH"; then
+        echo -e "${GREEN}✅ Application deployed successfully!${NC}"
+    else
+        echo -e "${RED}❌ Deployment failed. Check logs with:${NC}"
+        echo "   databricks apps logs $APP_NAME"
+        exit 1
+    fi
 else
-    echo -e "${RED}❌ Deployment failed. Check logs with:${NC}"
-    echo "   databricks apps logs $APP_NAME"
-    exit 1
+    echo "App does not exist, creating new app..."
+    if databricks apps create "$APP_NAME" --source-code-path "$WORKSPACE_PATH"; then
+        echo -e "${GREEN}✅ Application created successfully!${NC}"
+    else
+        echo -e "${RED}❌ App creation failed${NC}"
+        exit 1
+    fi
 fi
 echo ""
 
