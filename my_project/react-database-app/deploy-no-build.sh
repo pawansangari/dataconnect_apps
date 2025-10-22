@@ -103,10 +103,10 @@ echo ""
 
 # Step 4: Deploy Application
 echo -e "${YELLOW}🚀 Step 4/4: Deploying application...${NC}"
-echo "Running: databricks apps deploy \"$APP_NAME\" \"$WORKSPACE_PATH\" \"$ENVIRONMENT\""
+echo "Running: databricks apps deploy \"$APP_NAME\" --source-code-path \"$WORKSPACE_PATH\""
 echo ""
 
-if databricks apps deploy "$APP_NAME" "$WORKSPACE_PATH" "$ENVIRONMENT"; then
+if databricks apps deploy "$APP_NAME" --source-code-path "$WORKSPACE_PATH"; then
     echo -e "${GREEN}✅ Application deployed successfully!${NC}"
 else
     echo -e "${RED}❌ Deployment failed. Check logs with:${NC}"
